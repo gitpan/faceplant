@@ -1,4 +1,19 @@
-1.1
+1.2  Oct 25 17:06:11 CDT 2004
 
-  - Initial Release
+  - Maintenance Release by Dmitry Karabanov, some new features have been added,
+    most notably Photo Size Chooser (unless otherwise stated, changes pertain
+    to the top-level dhanlder)
+        - added .photo_size_chooser method
+        - altered .photo_view and other methods accordingly
+        - added corresponding HTTP GET and POST parameters
+        - added onclick attributes to relevant html elements
+        - introduced javascript class (called from onclick attributes) and 
+          top-level autohandler method for output of the script element
+        - added optional directory index view feature 
+        - added optional XHTML/CSS validation buttons 
+        - minor layout tweaks
+
+1.1  Feb 28 00:11:14 2004
+
+  - Initial Release by Casey West
 

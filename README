@@ -21,6 +21,23 @@ DESCRIPTION
     without touching the HTML, use CSS. The distribution comes with a CSS
     template which defines all the classes faceplant implements.
 
+  Apache Configuration Notes
+    Depending on your setup, you might need to specify for the js/
+    directory to be handled in default way by Apache. For example,
+    if faceplant was installed as /usr/local/apache/htdocs/gallery,
+    use httpd.conf directive something like the following:
+
+        <Location /gallery/js>
+          SetHandler default 
+        </Location>
+
+    You could use similar directive, should you decide to uncomment
+    relevant part of the top-level dhandler to make directory index
+    of pictures/ browseable in the default way.
+
+    Alternatively, move directory elsewhere under the DocumentRoot, and
+    be sure to reflect changes in the top-level autohandler and dhandler.
+
   Contributions
     The faceplant distribution will accept reasonable and documented
     contributions for a future release.
@@ -31,6 +48,9 @@ SEE ALSO
 
 AUTHOR
     Casey West, <casey@geeknest.com>.
+
+    Dmitry Karabanov, <rhizo@cpan.org>, extends and maintains faceplant
+    since version 1.2
 
 COPYRIGHT
       Copyright (c) 2004 Casey West.  All rights reserved.

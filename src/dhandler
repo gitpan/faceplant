@@ -1,6 +1,10 @@
 <%doc>
-$Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
+$Id: dhandler,v 1.2 Oct 25 21:12:07 CDT 2004 rhizo Exp $
 </%doc>
+
+<%init>
+    # $r->send_http_header("text/html"); # setup-dependent
+</%init>
 
 <%args>
   $page                 => 1
@@ -11,17 +15,27 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
   $sub_gal_table_css    => 'faceplant-sub-gal-table'
   $photo_list_wrap      => 5
   $photo_list_rows      => 7
-  $photo_list_pager_sep => '&middot;'
+  $photo_list_pager_sep => '&#183;' # &middot;
   $thumb_xsize          => 50
   $thumb_ysize          => 40
   $photo_xsize          => 300
   $photo_ysize          => 400
+  $photo_xsize_small    => 300   
+  $photo_ysize_small    => 400    
+  $photo_xsize_medium   => 600  
+  $photo_ysize_medium   => 800
+  $photo_xsize_large    => 1200
+  $photo_ysize_large    => 1600
   $thumb_table_css      => 'faceplant-thumb-table'
 </%args>
 
+<%ARGS>
+      $photo_scale => q/medium/
+</%ARGS>
+
 <%shared>
-  my $bread_crumb_sep      = ' &middot; ';
-  my $bread_crumb_href_sep = ' &middot; ';
+  my $bread_crumb_sep      = q/ &#58;&#58; /;
+  my $bread_crumb_href_sep = q/ &#58;&#58; /;
 
   use List::Group qw[group];
   use HTML::Table;
@@ -44,9 +58,13 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
   my @bread_crumb = ('Gallery', splitdir $path_from_uri);
 
   my @bread_crumb_href;
-  push @bread_crumb_href, sprintf '<a href="%s/%s">%s</a>',
-    $URI_BASE, join('/',@bread_crumb[1..$_]), $bread_crumb[$_]
-      for 0 .. $#bread_crumb - 1;
+  push @bread_crumb_href,
+       sprintf q|<a href=""
+                    onclick="javascript:return prop('%s/%s');">%s</a>|,
+               $URI_BASE,
+               join('/',@bread_crumb[1..$_]),
+               $bread_crumb[$_] for 0 .. $#bread_crumb - 1; # photo re-size onclick
+
   push @bread_crumb_href, $bread_crumb[-1];
 
   my $bread_crumb      = join $bread_crumb_sep, @bread_crumb;
@@ -58,14 +76,15 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
 
 <table class="<% $name %>-content-table">
   <tr>
-    <td valign="top" width="15%">
+    <td valign="top"
+        class="faceplant-sub-gal-cell">
       <& SELF:.sub_gal_list,
            dir_list          => $dir_list,
            wrap              => $sub_gal_wrap,
            sub_gal_table_css => $sub_gal_table_css,
        &>
     </td>
-    <td valign="top" width="35%">
+    <td valign="top">
       <& SELF:.photo_list,
            dir_list        => $dir_list,
            page            => $page,
@@ -76,12 +95,25 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
            thumb_ysize     => $thumb_ysize,
            thumb_table_css => $thumb_table_css,
        &>
+      <& SELF:.photo_size_chooser,
+           page     => $page,
+           scale    => $photo_scale,
+       &>
     </td>
-    <td valign="top" width="50%" class="<% $name %>-photo-view">
+    <td valign="top"
+        class="<% $name %>-photo-view">
       <& SELF:.photo_view,
            file  => $file,
            xsize => $photo_xsize,
            ysize => $photo_ysize,
+           alt => undef,          # TODO add annotations comp
+           scale => $photo_scale,               #
+           xsize_small  => $photo_xsize_small,  # 
+           ysize_small  => $photo_ysize_small,  # photo re-size
+           xsize_medium => $photo_xsize_medium, # tweak arguments 
+           ysize_medium => $photo_ysize_medium, # 
+           xsize_large  => $photo_xsize_large,  # 
+           ysize_large  => $photo_ysize_large,  # 
        &>
     </td>
   </tr>
@@ -91,7 +123,7 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
 
 <%method .title>
 % if ( $m->current_comp->parent->method_exists('.title') ) {
-  <& PARENT:.title &> &middot;
+  <& PARENT:.title &> <% $bread_crumb_sep %>
 % }
   <% $bread_crumb %>
 </%method>
@@ -103,7 +135,7 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
     $sub_gal_table_css => undef
   </%args>
 
-  <h3 class="faceplant-section-title">Sub <% @dir_list == 1 ? "Gallery" : "Galleries" %></h3>
+  <h3 class="faceplant-section-title">Sub Galler<% @dir_list == 1 ? "y" : "ies" %></h3>
   <% $table %>
   
   <%init>
@@ -121,7 +153,9 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
   <%args>
     $dir
   </%args>
-  <a href="<% $URI_BASE %>/<% $rel_dir %>"><% $label %></a>
+  <!-- photo re-size onclick -->  
+  <a href=""
+     onclick="javascript:return prop('<% $URI_BASE %>/<% $rel_dir %>');"><% $label %></a>
   <%init>
     my $rel_dir = abs2rel $dir, $GALLERY_ROOT;
     my $label   = (splitpath $rel_dir)[-1];
@@ -140,11 +174,11 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
       $thumb_table_css => undef
     </%args>
 
-    <h3 class="faceplant-section-title"><% @dir_list == 1 ? "Photo" : "Photos" %>
+    <h3 class="faceplant-page-count"><% $pages == 1 ? "page 1" : "pages" %>
         <& SELF:.photo_pager,
              page  => $page,
              pages => $pages,
-             sep   => $pager_sep
+             sep   => $pager_sep,
          &></h3>
     <% $table %>
 
@@ -156,6 +190,7 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
                      page => $page,
                      xsize => $thumb_xsize,
                      ysize => $thumb_ysize,
+                     alt => undef, # TODO
                     ) for @dir_list;
       my @files = group \@dir_list, cols => $wrap;
       my $pages  = int( @files / $rows );
@@ -172,18 +207,20 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
   <%args>
     $page
     $pages
-    $sep => '&middot;'
+    $sep
   </%args>
-  <span class="faceplant-thumb-pager">(
+  <span class="faceplant-thumb-pager">&#40;
 % for ( 1 .. $pages ) {
 %   if ( $_ == $page ) {
       <strong><% $page %></strong>
 %   } else {
-      <a href="?page=<% $_ %>"><% $_ %></a>
+      <!-- photo re-size onclick -->  
+      <a href=""
+         onclick="javascript:return prop('<% $r->uri %>','<% $_ %>');"><% $_ %></a>
 %   }
     <% $_ != $pages ? $sep : '' %>
 % }
-  )</span>
+  &#41;</span>
   <%init>
     return if $pages == 1;
   </%init>
@@ -193,14 +230,50 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
   <%args>
     $file
     $page
+    $alt => undef # TODO
     $xsize => 50
     $ysize => 40
   </%args>
-    <a href="<% $URI_BASE %>/<% $rel_img %>.html?page=<% $page %>">
-      <img src="<% $URI_BASE %>/images/<% $rel_img %>?xsize=<% $xsize %>;ysize=<% $ysize %>" border="0" class="faceplant-thumb" />
+    <!-- photo re-size onclick -->  
+    <a href=""
+       onclick="javascript:return prop('<% $URI_BASE %>/<% $rel_img %>.html','<% $page %>');">
+      <img src="<% $URI_BASE %>/images/<% $rel_img %>?xsize=<% $xsize %>;ysize=<% $ysize %>"
+           class="faceplant-thumb"
+           alt="<% $alt %>" />
     </a>
   <%init>
     my $rel_img = abs2rel $file, $GALLERY_ROOT;
+  </%init>
+</%method>
+
+<%method .photo_size_chooser>
+    <%args>
+      $page
+      $scale
+    </%args>
+
+    <br />
+     <form id="photo_scale_chooser"
+           method="post"
+           action="<% $r->uri . qq{?page=$page} %>">
+       <div class="faceplant-photo-scale-chooser-label">size:</div>
+       <div class="faceplant-photo-scale-chooser">
+         <select name="photo_scale"
+                 class="faceplant-photo-scale-chooser-select"
+                 onchange="javascript:this.form.submit();">
+             <option <% $selected{small} %> value="small"> small </option>
+             <option <% $selected{medium} %> value="medium"> medium </option>
+             <option <% $selected{large} %> value="large"> large </option>
+         </select>
+       </div>
+     </form>
+
+  <%init>
+      my %selected;
+         %selected = ( small  => undef,
+                       medium => undef,
+                       large  => undef, );
+         $selected{$scale} = q/selected="selected"/;
   </%init>
 </%method>
 
@@ -209,10 +282,26 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
       $file
       $xsize => 400
       $ysize => 300
+      $alt          #
+      $scale        # 
+      $xsize_small  #
+      $ysize_small  #
+      $xsize_medium #
+      $ysize_medium #
+      $xsize_large  #
+      $ysize_large  # photo re-size defaults
     </%args>
-    <h3 class="faceplant-section-title">Photo</h3>
-    <img src="<% $URI_BASE %>/images/<% $rel_image %>?xsize=<% $xsize %>;ysize=<% $ysize %>" class="faceplant-photo" />
+    <!--h3 class="faceplant-section-title">Photo</h3--><!-- TODO, annotations -->
+    <img src="<% $URI_BASE %>/images/<% $rel_image %>?xsize=<% $xsize %>;ysize=<% $ysize %>"
+         class="faceplant-photo"
+         alt="$alt" />
     <%init>
+      my %img_sizes;                                                 #
+         %img_sizes = ( small  => [ $xsize_small, $ysize_small  ],   #
+                        medium => [ $xsize_medium,$ysize_medium ],   #
+                        large  => [ $xsize_large, $ysize_large  ] ); # 
+      ( $xsize, $ysize ) = @{ $img_sizes{$scale} }[0..1];            # photo re-size tweak
+
       return unless -f $file;
       my $rel_image = abs2rel $file, $GALLERY_ROOT;
     </%init>
@@ -222,11 +311,38 @@ $Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
   <%args>
     $vein
   </%args>
-  <div align="center" class="faceplant-attribute">faceplant v<% $VERSION %></div>
+
+  <!-- validation debug, optional
+      <p>
+         <a href="http://validator.w3.org/check/referer"><img class="faceplant-valid"
+                                                              src="http://www.w3.org/Icons/valid-xhtml10"
+                                                              alt="Valid XHTML 1.0!" /></a>
+         <a href="http://jigsaw.w3.org/css-validator/"><img class="faceplant-valid"
+                                                            src="http://jigsaw.w3.org/css-validator/images/vcss" 
+                                                            alt="Valid CSS!" /></a>
+      </p>
+  validation debug, optional -->
+
+  <!-- optionally, handle the 'pictures' directory in default way
+       <div class="faceplant-pictures-default-view">
+           <a href="<%$URI_BASE%>/pictures/">&nbsp; View Directory Index &nbsp;</a>
+       </div>
+  default handling, optional -->
+                                                
+  <div class="faceplant-attribute">
+             Powered by <a href="http://search.cpan.org/dist/faceplant/"
+                           class="faceplant-attribute-version">faceplant v<% $VERSION %></a>
+      
+  </div>
+
+  <h4 class="faceplant-jaunt">
+      <a href="#top">&nbsp; Back to Top &nbsp;</a>
+  </h4>
+
   <%init>
     return unless $vein;
     my $VERSION;
-       $VERSION = (qw$Revision: 1.1 $)[1];
+       $VERSION = (qw$Revision: 1.2 $)[1];
   </%init>
 </%method>
 
@@ -261,6 +377,24 @@ If you want to change the look of your photo gallery in a bigger way,
 without touching the HTML, use CSS. The distribution comes with a CSS
 template which defines all the classes faceplant implements.
 
+=head2 Apache Configuration Notes
+
+Depending on your setup, you might need to specify for the js/
+directory to be handled in default way by Apache. For example,
+if faceplant was installed as /usr/local/apache/htdocs/gallery,
+use httpd.conf directive something like the following:
+
+    <Location /gallery/js>
+      SetHandler default 
+    </Location>
+
+You could use similar directive, should you decide to uncomment
+relevant part of the top-level dhandler to make directory index
+of pictures/ browseable in the default way.
+
+Alternatively, move directory elsewhere under the DocumentRoot, and
+be sure to reflect changes in the top-level autohandler and dhandler.
+
 =head2 Contributions
 
 The faceplant distribution will accept reasonable and documented
@@ -274,6 +408,8 @@ L<File::Type>, L<File::Spec::Functions>.
 =head1 AUTHOR
 
 Casey West, <F<casey@geeknest.com>>.
+
+Dmitry Karabanov, <F<rhizo@cpan.org>>, extends and maintains faceplant since version 1.2
 
 =head1 COPYRIGHT
 

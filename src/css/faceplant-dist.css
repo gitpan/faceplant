@@ -1,6 +1,6 @@
 /*
  *
- * $Id: faceplant-dist.css,v 1.1 2004/02/28 00:11:14 cwest Exp $
+ * $Id: faceplant-dist.css,v 1.2 Oct 25 19:14:38 CDT 2004 rhizo Exp $
  * Example faceplant CSS
  * This is a template listing all the classes in faceplant by default.
  *
@@ -22,11 +22,31 @@ h3.faceplant-section-title {
 
 }
 
+h3.faceplant-page-count { 
+
+}
+
+div.faceplant-photo-scale-chooser-label {
+
+}
+
+div.faceplant-photo-scale-chooser {
+
+}
+
+select.faceplant-photo-scale-chooser-select {
+
+} 
+
 table.faceplant-sub-gal-table {
 
 }
 
 table.faceplant-sub-gal-table tr td a {
+
+}
+
+td.faceplant-sub-gal-cell {
 
 }
 
@@ -50,6 +70,23 @@ img.faceplant-photo {
 
 }
 
+img.faceplant-valid {
+
+}
+
 div.faceplant-attribute {
 
 }
+
+a.faceplant-attribute-version {
+
+}
+
+div.faceplant-pictures-default-view {
+
+}
+
+h4.faceplant-jaunt {
+
+}
+

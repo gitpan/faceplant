@@ -1,5 +1,5 @@
 <%doc>
-$Id: autohandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
+$Id: autohandler,v 1.2 Oct 25 20:09:26 CDT 2004 rhizo Exp $
 
 This is a default autohandler that you may choose to use with your photo gallery.
 
@@ -7,11 +7,28 @@ This is a default autohandler that you may choose to use with your photo gallery
 
 <%method .title>My Website</%method>
 
+<%method .head_includes>
+    <script type="text/javascript"
+            src="<% $js_src %>">
+    </script>
+    <link rel="stylesheet"
+          type="text/css"
+          href="<% $css_src %>" />
+  <%init>
+      my $d_arg = $m->dhandler_arg;
+      my ($uri_base) = $r->uri =~ m!^(.+)/(?:$d_arg|index\.html)!;
+      my $js_src  = $uri_base .  q{/js/faceplant-dist.js};
+      my $css_src = $uri_base . q{/css/faceplant-dist.css};
+  </%init>
+</%method>
+
 <html>
   <head>
     <title><& SELF:.title &></title>
+    <& SELF:.head_includes &>
   </head>
   <body>
+    <ins><a name="top"></a></ins>
     <% $m->call_next %>
   </body>
 </html>
