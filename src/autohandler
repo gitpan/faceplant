@@ -1,0 +1,17 @@
+<%doc>
+$Id: autohandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
+
+This is a default autohandler that you may choose to use with your photo gallery.
+
+</%doc>
+
+<%method .title>My Website</%method>
+
+<html>
+  <head>
+    <title><& SELF:.title &></title>
+  </head>
+  <body>
+    <% $m->call_next %>
+  </body>
+</html>

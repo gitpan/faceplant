@@ -1,0 +1,16 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         faceplant
+version:      1.1
+version_from: src/dhandler
+installdirs:  site
+requires:
+    File::Spec::Functions:         0
+    File::Type:                    0
+    HTML::Mason:                   0
+    HTML::Table:                   0
+    Imager:                        0
+    List::Group:                   0
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17

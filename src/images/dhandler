@@ -1,0 +1,50 @@
+<%args>
+  $xsize => undef
+  $ysize => undef
+</%args>
+<%flags>
+  inherit => undef
+</%flags>
+<%init>
+  $m->clear_buffer;
+
+  use Imager;
+  use File::Type;
+
+  my $send_img = sub {
+    $r->content_type( "image/$_[0]" );
+    $r->send_http_header;
+    $m->print($_[1]);
+    $m->abort(200);
+  };
+
+  ( my $file = $r->document_root . $r->uri ) =~ s/images/pictures/;
+
+  my ($image, $type) = split /\//, File::Type->checktype_filename($file);
+  $type = 'png' if $type eq 'x-png';
+
+  my $key = "$file|$xsize|$ysize";
+  if ( my $data = $m->cache->get( $key ) ) {
+    $send_img->($type, $data);
+  }
+
+  $m->abort(500) if $image ne 'image' || ! exists $Imager::formats{$type};
+  my $img  = Imager->new;
+  if ( $image eq 'image' && $img->open(file => $file, type => $type) ) {
+      if ( $xsize ) {
+        $img = $img->scale( xpixels => $xsize )
+          unless $img->getwidth < $xsize;
+      }
+      if ( $ysize ) {
+        $img = $img->scale( ypixels => $ysize )
+          unless $img->getheight < $ysize;
+      }
+
+      my $img_data;
+      $img->write(data => \$img_data, type => $type);
+      $m->cache->set( $key => $img_data );
+      $send_img->($type, $img_data);
+  }
+  warn "[$file] [$image/$type] " . $img->errstr;
+  $m->abort(500);
+</%init>

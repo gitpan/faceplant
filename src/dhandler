@@ -1,0 +1,286 @@
+<%doc>
+$Id: dhandler,v 1.1 2004/02/28 00:11:14 cwest Exp $
+</%doc>
+
+<%args>
+  $page                 => 1
+  $name                 => 'faceplant'
+  $title                => 'Photo Gallery'
+  $attribute            => 1
+  $sub_gal_wrap         => 1
+  $sub_gal_table_css    => 'faceplant-sub-gal-table'
+  $photo_list_wrap      => 5
+  $photo_list_rows      => 7
+  $photo_list_pager_sep => '&middot;'
+  $thumb_xsize          => 50
+  $thumb_ysize          => 40
+  $photo_xsize          => 300
+  $photo_ysize          => 400
+  $thumb_table_css      => 'faceplant-thumb-table'
+</%args>
+
+<%shared>
+  my $bread_crumb_sep      = ' &middot; ';
+  my $bread_crumb_href_sep = ' &middot; ';
+
+  use List::Group qw[group];
+  use HTML::Table;
+  use File::Spec::Functions qw[:ALL];
+
+  my $d_arg = $m->dhandler_arg;
+  my ($URI_BASE) = ( $r->uri =~ m!^(.+)/(?:$d_arg|index\.html)! );
+  my $GALLERY_ROOT = $r->document_root . "$URI_BASE/pictures";
+
+  (my $path_from_uri = $d_arg) =~ s!(?:(?:/index)?\.html|/)$!!;
+
+  my $file = catdir $GALLERY_ROOT, $path_from_uri;
+  $m->clear_buffer and $m->abort(404) unless -e $file;
+
+  my $dir = -d $file ? $file : (splitpath $file)[1];
+  opendir DIR, $dir or die "$dir: $!";
+  my $dir_list = [ map "$dir/$_", grep { ! /^\./ } readdir DIR ];
+  closedir DIR;
+
+  my @bread_crumb = ('Gallery', splitdir $path_from_uri);
+
+  my @bread_crumb_href;
+  push @bread_crumb_href, sprintf '<a href="%s/%s">%s</a>',
+    $URI_BASE, join('/',@bread_crumb[1..$_]), $bread_crumb[$_]
+      for 0 .. $#bread_crumb - 1;
+  push @bread_crumb_href, $bread_crumb[-1];
+
+  my $bread_crumb      = join $bread_crumb_sep, @bread_crumb;
+  my $bread_crumb_href = join $bread_crumb_href_sep, @bread_crumb_href;
+</%shared>
+
+<h1 class="<% $name %>-title"><% $title %></h1>
+<h2 class="<% $name %>-breadcrumb"><% $bread_crumb_href %></h2>
+
+<table class="<% $name %>-content-table">
+  <tr>
+    <td valign="top" width="15%">
+      <& SELF:.sub_gal_list,
+           dir_list          => $dir_list,
+           wrap              => $sub_gal_wrap,
+           sub_gal_table_css => $sub_gal_table_css,
+       &>
+    </td>
+    <td valign="top" width="35%">
+      <& SELF:.photo_list,
+           dir_list        => $dir_list,
+           page            => $page,
+           wrap            => $photo_list_wrap,
+           rows            => $photo_list_rows,
+           pager_sep       => $photo_list_pager_sep,
+           thumb_xsize     => $thumb_xsize,
+           thumb_ysize     => $thumb_ysize,
+           thumb_table_css => $thumb_table_css,
+       &>
+    </td>
+    <td valign="top" width="50%" class="<% $name %>-photo-view">
+      <& SELF:.photo_view,
+           file  => $file,
+           xsize => $photo_xsize,
+           ysize => $photo_ysize,
+       &>
+    </td>
+  </tr>
+</table>
+
+<& SELF:.attribute, vein => $attribute &>
+
+<%method .title>
+% if ( $m->current_comp->parent->method_exists('.title') ) {
+  <& PARENT:.title &> &middot;
+% }
+  <% $bread_crumb %>
+</%method>
+
+<%method .sub_gal_list>
+  <%args>
+    @dir_list
+    $wrap => 1
+    $sub_gal_table_css => undef
+  </%args>
+
+  <h3 class="faceplant-section-title">Sub <% @dir_list == 1 ? "Gallery" : "Galleries" %></h3>
+  <% $table %>
+  
+  <%init>
+    @dir_list = grep { -d $_ } @dir_list;
+    return unless @dir_list;
+    $_ = $m->scomp('SELF:.sub_gal_view',dir => $_) for @dir_list;
+    my $table = HTML::Table->new(
+                  -data  => [ group \@dir_list, cols => $wrap ],
+                  -class => $sub_gal_table_css,
+                );
+  </%init>
+</%method>
+
+<%method .sub_gal_view>
+  <%args>
+    $dir
+  </%args>
+  <a href="<% $URI_BASE %>/<% $rel_dir %>"><% $label %></a>
+  <%init>
+    my $rel_dir = abs2rel $dir, $GALLERY_ROOT;
+    my $label   = (splitpath $rel_dir)[-1];
+  </%init>
+</%method>
+
+<%method .photo_list>
+    <%args>
+      @dir_list
+      $wrap => 5
+      $rows => 7
+      $page => 1
+      $pager_sep
+      $thumb_xsize
+      $thumb_ysize
+      $thumb_table_css => undef
+    </%args>
+
+    <h3 class="faceplant-section-title"><% @dir_list == 1 ? "Photo" : "Photos" %>
+        <& SELF:.photo_pager,
+             page  => $page,
+             pages => $pages,
+             sep   => $pager_sep
+         &></h3>
+    <% $table %>
+
+    <%init>
+      @dir_list = grep { -f $_ } @dir_list;
+      return unless @dir_list;
+      $_ = $m->scomp('SELF:.thumb_view',
+                     file => $_,
+                     page => $page,
+                     xsize => $thumb_xsize,
+                     ysize => $thumb_ysize,
+                    ) for @dir_list;
+      my @files = group \@dir_list, cols => $wrap;
+      my $pages  = int( @files / $rows );
+         $pages += 1 if $pages < ( @files / $rows );
+      @files = splice @files, $rows * ($page - 1), $rows;
+      my $table = HTML::Table->new(
+                    -data  => \@files,
+                    -class => $thumb_table_css,
+                  );
+    </%init>
+</%method>
+
+<%method .photo_pager>
+  <%args>
+    $page
+    $pages
+    $sep => '&middot;'
+  </%args>
+  <span class="faceplant-thumb-pager">(
+% for ( 1 .. $pages ) {
+%   if ( $_ == $page ) {
+      <strong><% $page %></strong>
+%   } else {
+      <a href="?page=<% $_ %>"><% $_ %></a>
+%   }
+    <% $_ != $pages ? $sep : '' %>
+% }
+  )</span>
+  <%init>
+    return if $pages == 1;
+  </%init>
+</%method>
+
+<%method .thumb_view>
+  <%args>
+    $file
+    $page
+    $xsize => 50
+    $ysize => 40
+  </%args>
+    <a href="<% $URI_BASE %>/<% $rel_img %>.html?page=<% $page %>">
+      <img src="<% $URI_BASE %>/images/<% $rel_img %>?xsize=<% $xsize %>;ysize=<% $ysize %>" border="0" class="faceplant-thumb" />
+    </a>
+  <%init>
+    my $rel_img = abs2rel $file, $GALLERY_ROOT;
+  </%init>
+</%method>
+
+<%method .photo_view>
+    <%args>
+      $file
+      $xsize => 400
+      $ysize => 300
+    </%args>
+    <h3 class="faceplant-section-title">Photo</h3>
+    <img src="<% $URI_BASE %>/images/<% $rel_image %>?xsize=<% $xsize %>;ysize=<% $ysize %>" class="faceplant-photo" />
+    <%init>
+      return unless -f $file;
+      my $rel_image = abs2rel $file, $GALLERY_ROOT;
+    </%init>
+</%method>
+
+<%method .attribute>
+  <%args>
+    $vein
+  </%args>
+  <div align="center" class="faceplant-attribute">faceplant v<% $VERSION %></div>
+  <%init>
+    return unless $vein;
+    my $VERSION;
+       $VERSION = (qw$Revision: 1.1 $)[1];
+  </%init>
+</%method>
+
+<%doc>
+
+=pod
+
+=head1 NAME
+
+faceplant - A Photo Gallery written in Mason and Imager
+
+=head1 SYNOPSIS
+
+  perl Makefile.PL
+  ... blah blah blah ...
+  [ Answer Important Questions ]
+  ... blah blah blah ...
+  make install
+
+=head1 DESCRIPTION
+
+This photo gallery is written in Mason and Imager. It is intended to
+integrate well into any existing website without the need to work around
+it.
+
+=head2 Customization
+
+There are a number of customizable fields in the C<< <%args> >> block.
+They should be self explanatory, and let you do most anything you want.
+
+If you want to change the look of your photo gallery in a bigger way,
+without touching the HTML, use CSS. The distribution comes with a CSS
+template which defines all the classes faceplant implements.
+
+=head2 Contributions
+
+The faceplant distribution will accept reasonable and documented
+contributions for a future release.
+
+=head1 SEE ALSO
+
+L<perl>, L<HTML::Mason>, L<Imager>, L<List::Group>, L<HTML::Table>,
+L<File::Type>, L<File::Spec::Functions>.
+
+=head1 AUTHOR
+
+Casey West, <F<casey@geeknest.com>>.
+
+=head1 COPYRIGHT
+
+  Copyright (c) 2004 Casey West.  All rights reserved.
+  This module is free software; you can redistribute it and/or modify it
+  under the same terms as Perl itself.
+
+=cut
+
+</%doc>

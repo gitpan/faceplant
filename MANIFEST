@@ -1,0 +1,11 @@
+Changes
+contrib/README
+Makefile.PL
+MANIFEST			This list of files
+META.yml
+README
+src/autohandler
+src/css/faceplant-dist.css
+src/dhandler
+src/images/dhandler
+src/index.html

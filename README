@@ -1,0 +1,39 @@
+NAME
+    faceplant - A Photo Gallery written in Mason and Imager
+
+SYNOPSIS
+      perl Makefile.PL
+      ... blah blah blah ...
+      [ Answer Important Questions ]
+      ... blah blah blah ...
+      make install
+
+DESCRIPTION
+    This photo gallery is written in Mason and Imager. It is intended to
+    integrate well into any existing website without the need to work around
+    it.
+
+  Customization
+    There are a number of customizable fields in the "<%args>" block. They
+    should be self explanatory, and let you do most anything you want.
+
+    If you want to change the look of your photo gallery in a bigger way,
+    without touching the HTML, use CSS. The distribution comes with a CSS
+    template which defines all the classes faceplant implements.
+
+  Contributions
+    The faceplant distribution will accept reasonable and documented
+    contributions for a future release.
+
+SEE ALSO
+    perl, HTML::Mason, Imager, List::Group, HTML::Table, File::Type,
+    File::Spec::Functions.
+
+AUTHOR
+    Casey West, <casey@geeknest.com>.
+
+COPYRIGHT
+      Copyright (c) 2004 Casey West.  All rights reserved.
+      This module is free software; you can redistribute it and/or modify it
+      under the same terms as Perl itself.
+
